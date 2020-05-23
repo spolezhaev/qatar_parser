@@ -21,6 +21,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import ElementNotInteractableException
+from selenium.webdriver.chrome.options import Options
 
 from tqdm import tqdm
 from pathlib import Path
@@ -31,6 +32,27 @@ SUPPORTED_AIRLINES = ("qatar",)
 screenshot_directory = Path('screenshots')
 
 drivers = {}
+
+class element_has_css_class(object):
+    """An expectation for checking that an element has a particular css class.
+
+    locator - used to find the element
+    returns the WebElement once it has the particular css class
+    """
+    def __init__(self):
+        pass
+
+    def __call__(self, driver):
+        try:
+            return driver.find_element(By.ID,"flightDetailForm_outbound:calendarInitiator_OutBound")
+        except:
+            pass
+        
+        try:
+            return driver.find_element(By.XPATH,"//li[contains(., 'There are currently no flight options')]")
+        except:
+            return False
+        return False
 
 
 def qatar_search(driver, from_airport, to_airport, departure_date, return_date, travel_class, promo=""):
@@ -76,14 +98,15 @@ def qatar_search(driver, from_airport, to_airport, departure_date, return_date, 
     search_element = driver.find_element_by_id("T7-search")
     search_element.click()
 
+
     WebDriverWait(driver, 300).until(
         #lambda driver: driver.find_element(By.XPATH,"//li[text()='(There are currently no flight )']") or driver.find_element(By.ID,"flightDetailForm_outbound:calendarInitiator_OutBound")
-        lambda driver: EC.visibility_of_element_located((By.ID, "flightDetailForm_outbound:calendarInitiator_OutBound")) or EC.visibility_of_element_located((By.XPATH, "//li[text()='(There are currently no flight )']"))
+        element_has_css_class()#EC.visibility_of_element_located((By.ID, "modifySearch"))# "flightDetailForm_outbound:calendarInitiator_OutBound"))
     )
 
     try:
-        driver.find_element(By.XPATH,"//li[text()='(There are currently no flight )']")
-        raise Exception("Таких полетов нет")
+        driver.find_element(By.XPATH,"//li[contains(., 'There are currently no flight options')]")
+        return "Таких полетов нет"
     except:
         pass
 
@@ -94,7 +117,7 @@ def qatar_search(driver, from_airport, to_airport, departure_date, return_date, 
     try:
         driver.find_element_by_xpath("//span[text()='(Taxes only)']")
     except:
-        raise Exception("Нет скидосов")
+        return "Нет скидосов"
     
 
     price = driver.find_element_by_class_name("number").text
@@ -161,7 +184,7 @@ def qatar_main(flight_options):
                 for result, end_date in zip(results, end_dates):
                     if not result:
                         continue
-                    df = df.append({"outbound_airport": outbound_airport, "destination_airport": destination_airport, "start_date": start_date, "return_date": end_date, "price": result})
+                    df = df.append({"outbound_airport": outbound_airport, "destination_airport": destination_airport, "start_date": start_date, "return_date": end_date, "price": result}, ignore_index=True)
                 df.to_csv('prices.csv', index=False)
 
 
@@ -172,8 +195,9 @@ if __name__ == "__main__":
         flight_options = yaml.safe_load(f)
 
     # Headless execution
-    options = webdriver.ChromeOptions()
-    user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'    
+    options = Options()
+    user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'   
+    options.headless = True
     options.add_argument('user-agent={0}'.format(user_agent))
     options.add_argument("--headless")
     os.environ['MOZ_HEADLESS_WIDTH'] = '2560' # workaround to set size correctly
