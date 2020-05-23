@@ -1,0 +1,25 @@
+outbound_airports:
+  - DME
+  - LED
+destination_airports:
+  - CPT
+  - SYD
+  - MEL
+  - ADL
+  - AKL
+  - GRU
+  - EZE
+  - LAX
+  - ATL
+  - MIA
+  - JFK
+  - YUL
+  - HND
+  - NRT
+  - MLE
+  - CGK
+
+start_outbound_date: "2020-08-01"
+end_outbound_date: "2020-12-01"
+
+promo: <YOUR PROMO>
